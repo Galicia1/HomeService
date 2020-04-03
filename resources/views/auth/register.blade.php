@@ -62,6 +62,7 @@
 
                                 <button class="btn btn-primary btn-block text-white btn-user" type="submit" style="background-image: url(&quot;assets/img/gradient%20image.jpg&quot;);">Registrar cuenta</button>
                                 <hr>
+                                <div class="text-center"><a class="small" href="{{ route('login') }}">Inicia sesión</a></div>
                             </form>
                             
                         </div>
