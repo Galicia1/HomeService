@@ -8,11 +8,11 @@ use Illuminate\Support\Facades\Storage;
 
 use App\Servicio;
 
-class apiServicioApiController extends Controller
+class ServiciosController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('auth:api');
+        $this->middleware('auth');
     }
     /**
      * Display a listing of the resource.
@@ -20,21 +20,41 @@ class apiServicioApiController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function index(Request $request) {
-        
-        $fechaInicio = $request->input('created_at');
-        $fechaFin = $request->input('updated_at');
+        $nombre_cliente = $request->input('nombre_cliente');
+        $estado = $request->input('estado');
+        $fechaCreado = $request->input('created_at');
+        $servicio = $request->input('servicio');
 
-        if($fechaInicio && $fechaFin)
+        $servicios = array();
+
+        if($nombre_cliente)
         {
-            $servicios = Servicio::where('created_at','>=',$fechaInicio)->where('created_at','<=',$fechaFin)->get();
-
+            $servicios = Servicio::where('nombre_cliente','LIKE','%'.$nombre_cliente.'%')->get();
         }
 
-        else
+        else if($estado)
+        {
+            $servicios = Servicio::where('estado','LIKE','%'.$estado.'%')->get();
+        }
+
+        else if($fechaCreado)
+        {
+            $servicios = Servicio::where('created_at','LIKE','%'.$fechaCreado.'%')->get();
+        }
+
+        else if($servicio)
+        {
+            $servicios = Servicio::where('servicio','LIKE','%'.$servicio.'%')->get();
+        }
+        else 
         {
             $servicios = Servicio::all();
         }
-        return $servicios;
+
+        $argumentos = array();
+        $argumentos['servicios'] = $servicios;
+
+        return view('servicios.index', $argumentos);
     }
 
     /**
@@ -67,7 +87,6 @@ class apiServicioApiController extends Controller
         $servicio->direccion = $request->input('direccion');
         $servicio->created_at = $request->input('created_at');
         $servicio->updated_at = $request->input('updated_at');
-        
 
 
         if ($request->hasFile('foto_resultado')) {
@@ -79,13 +98,10 @@ class apiServicioApiController extends Controller
 
         }
 
-        $argumentos = array();
-        $argumentos['exito'] = false;
-        if($servicio -> save()){
-            $argumentos['exito'] = true;
+        if ($servicio->save()) {
 
-        }    
-        return $argumentos;
+            return redirect()->route('servicios.index')->with('exito', '¡se a guardado!');
+        }
     }
 
     /**
@@ -102,8 +118,28 @@ class apiServicioApiController extends Controller
         {
             $argumentos = array();
             $argumentos['servicio'] = $servicio;
-            return view('servicio.show', $argumentos);
+            return view('servicios.show', $argumentos);
         }
+    }
+
+        /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function edit($id)
+    {
+        $servicio = Servicio::find($id);
+
+        if($servicio){
+
+            $argumentos = array();
+            $argumentos['servicio'] = $servicio;
+            return view('servicios.edit', $argumentos);
+
+        } 
+        return redirect()->route('servicios.index')->with('error', 'No se encontro');
     }
 
     /**
@@ -127,24 +163,22 @@ class apiServicioApiController extends Controller
             $servicio->created_at = $request->input('created_at');
             $servicio->updated_at = $request->input('updated_at');
 
-            if ($request->hasFile('foto_resultado')) {
+            if ($request->hasFile('foto')) {
 
-                $archivoPortada = $request->file('foto_resultado');
+                $archivoPortada = $request->file('foto');
                 $rutaArchivo = $archivoPortada->store('public\assets\img\imgServicios');
                 $rutaArchivo = substr($rutaArchivo, 30);
-                $servicio->foto_resultado = $rutaArchivo;
+                $servicio->foto = $rutaArchivo;
     
             }
-
-            $argumentos = array();
-            $argumentos['exito'] = false;
-            if($servicio -> save()){
-                $argumentos['exito'] = true;
-    
-            }    
-            return $argumentos;    
                 
+            if($servicio->save()){
+                return redirect()->route('servicios.edit', $id)->with('exito', 'Se actualizo exitosamente');
+
+            }
+            return redirect()->route('servicios.edit', $id)->with('error', 'No se pudo actualizar ');
         }
+        return redirect()->route('servicios.index')->with('error', 'No se encontro');
     }
 
     /**
@@ -153,9 +187,16 @@ class apiServicioApiController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-
     public function destroy($id)
     {
-        //
+        $servicio = Servicio::find($id);
+        if($servicio){
+
+            if($servicio->delete()){
+                return redirect()->route('servicios.index')->with('exito', '¡eliminada exitosamente!');
+            }
+            return redirect()->route('servicios.index')->with('error', 'No se puedo eliminar');
+        }
+        return redirect()->route('servicios.index')->with('error', 'No se encontró');
     }
 }
